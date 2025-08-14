@@ -1,0 +1,99 @@
+    /* src/index.css */
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+
+
+    /* Profile Dropdown */
+.profile-menu {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .profile-dropdown {
+    position: absolute;
+    top: 110%;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.25s ease;
+    z-index: 100;
+  }
+  
+  .profile-menu:hover .profile-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  
+  .profile-dropdown a {
+    display: block;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: #333;
+    font-size: 15px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s ease;
+  }
+  
+  .profile-dropdown a:last-child {
+    border-bottom: none;
+  }
+  
+  .profile-dropdown a:hover {
+    background: #f5f5f5;
+  }
+  
+
+
+  .profile-page {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .profile-page h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .profile-details {
+    background: #f8f8f8;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  }
+  
+  .booking-history table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .booking-history th, .booking-history td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+  }
+  
+  .booking-history tr:hover {
+    background-color: #f1f1f1;
+  }
+  
+  .completed {
+    color: green;
+    font-weight: bold;
+  }
+  
+  .cancelled {
+    color: red;
+    font-weight: bold;
+  }
+  
