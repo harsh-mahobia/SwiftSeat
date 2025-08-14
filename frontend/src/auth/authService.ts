@@ -23,12 +23,12 @@ export interface RegisterData {
 }
 
 export async function register(data: RegisterData) {
-  const res = await api.post('/register', data); 
-  // If backend runs on another port, use full URL: http://localhost:5000/register
+  const res = await api.post('/users/register', data); 
+  console.log(data);
   return res.data;
 }
 export async function login(data: LoginData) {
-  const res = await api.post('/login', data);
+  const res = await api.post('/users/login', data);
   localStorage.setItem("user", JSON.stringify(res));
   return res.data; // { token, userId }
 }

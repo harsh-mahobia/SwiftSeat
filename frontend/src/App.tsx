@@ -7,7 +7,6 @@ import Login from "./auth/Login";
 import Register from "./auth/Register";
 import Search from "./pages/Search";
 import Contact from "./pages/Contact";
-import Profile from "./pages/Profile";
 import BookingHistory from "./pages/BookingHistory";
 import PersonalDetails from "./pages/PersonalDetails";
 
