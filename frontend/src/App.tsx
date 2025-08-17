@@ -1,45 +1,22 @@
-// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import SearchPage from "./pages/SearchPage";
+import BusDetailsPage from "./pages/BusDetailsPage";
+import PaymentPage from "./pages/PaymentPage";
+import ResultsPage from "./pages/ResultsPage";
 import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Login from "./auth/Login";
-import Register from "./auth/Register";
-import Search from "./pages/Search";
-import Contact from "./pages/Contact";
-import BookingHistory from "./pages/BookingHistory";
-import PersonalDetails from "./pages/PersonalDetails";
+import BookingSuccess from "./pages/BookingSuccess";
 
 function App() {
   return (
     <Router>
-      <Navbar />
+        <Navbar/>
       <Routes>
-        <Route path="/" element={<Home />} />
-        
-        <Route
-          path="/search"
-          element={
-            <ProtectedRoute>
-              <Search />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/bookings"
-          element={
-            <ProtectedRoute>
-              <h1>Bookings Page</h1>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/profile/bookings" element={<BookingHistory />} />
-        <Route path="/profile/details" element={<PersonalDetails />} />
+        <Route path="/" element={<SearchPage />} />
+        <Route path="/buses" element={<ResultsPage />} />
+        <Route path="/bus/:id" element={<BusDetailsPage />} />
+        <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/booking-success" element={<BookingSuccess/>} />
+        <Route path="*" element={<div>404 Not Found</div>} />
       </Routes>
     </Router>
   );
