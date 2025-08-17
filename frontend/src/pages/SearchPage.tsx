@@ -9,7 +9,6 @@ const SearchPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // redirect to results page with query params
     navigate(`/buses?departureCity=${departureCity}&arrivalCity=${arrivalCity}&date=${date}`);
   };
 

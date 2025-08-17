@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import api from "../config/axios";
 
 interface Stop {
   city: string;
@@ -50,7 +51,6 @@ const PaymentPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Prepare payload in backend format
       const payload = {
         busId: bus._id,
         seats: selectedSeats,
@@ -62,23 +62,19 @@ const PaymentPage: React.FC = () => {
         totalPrice,
       };
 
-      const res = await fetch("http://localhost:4000/api/bookings", {
-        method: "POST",
+      const res = await api.post("/api/bookings", payload, {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to create booking");
+      if (!res.data) {
+        throw new Error("Failed to create booking");
       }
 
-      const data = await res.json();
-      console.log("Booking successful:", data);
+      const {data} = res;
 
-      // Redirect to success page (send bookingId in state)
+      
       navigate("/booking-success", { state: data });
 
 

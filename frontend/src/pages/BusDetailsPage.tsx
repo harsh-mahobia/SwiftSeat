@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../config/axios";
 
 interface Stop {
   city: string;
@@ -38,8 +38,7 @@ const BusDetailsPage: React.FC = () => {
   useEffect(() => {
     const fetchBus = async () => {
       try {
-        console.log(id);
-        const { data } = await axios.get(`http://localhost:4000/api/buses/${id?.toString()}`);
+        const { data } = await api.get(`/api/buses/${id?.toString()}`);
         setBus(data.bus);
       } catch (err) {
 
@@ -52,7 +51,7 @@ const BusDetailsPage: React.FC = () => {
   }, [id]);
 
   const toggleSeat = (seatNumber: number, available: boolean) => {
-    if (!available) return; // can't select booked seats
+    if (!available) return; 
     setSelectedSeats((prev) =>
       prev.includes(seatNumber) ? prev.filter((s) => s !== seatNumber) : [...prev, seatNumber]
     );
@@ -111,7 +110,6 @@ const BusDetailsPage: React.FC = () => {
           })}
         </div>
 
-        {/* Legend */}
         <div className="flex gap-4 mt-4 text-sm">
           <span className="flex items-center gap-1"><span className="w-4 h-4 bg-green-200 inline-block rounded"></span> Available</span>
           <span className="flex items-center gap-1"><span className="w-4 h-4 bg-blue-400 inline-block rounded"></span> Selected</span>
@@ -119,7 +117,6 @@ const BusDetailsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Booking Summary */}
       <div className="bg-white shadow rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-2">Booking Summary</h3>
         <p className="text-gray-700">

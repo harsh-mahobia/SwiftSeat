@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../config/axios";
 
 interface Stop {
   city: string;
@@ -35,7 +35,6 @@ const ResultsPage = () => {
   const date = queryParams.get("date") || "";
 
   const [buses, setBuses] = useState<Bus[]>([]);
-  const [filteredBuses, setFilteredBuses] = useState<Bus[]>([]);
   const [selectedSeatTypes, setSelectedSeatTypes] = useState<string[]>([]);
   const [selectedAcTypes, setSelectedAcTypes] = useState<string[]>([]);
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
@@ -43,47 +42,43 @@ const ResultsPage = () => {
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showFilters, setShowFilters] = useState<boolean>(false); // 👈 mobile toggle
 
-  const pageSize = 5; // number of buses per page
+  const pageSize = 5;
 
-  // Fetch buses with loading state
-  useEffect(() => {
-    const fetchBuses = async () => {
-      setLoading(true);
-      try {
-        const start = Date.now();
-        const { data } = await axios.get("http://localhost:4000/api/buses", {
-          params: { departureCity, arrivalCity, date, page, pageSize },
-        });
-        
-        console.log(data);
-        const elapsed = Date.now() - start;
-        const minDelay = 1000; // 1 second
+  const fetchBuses = async () => {
+    setLoading(true);
+    try {
+      const start = Date.now();
+      
+      const { data } = await api.post("/api/buses",{
+        seatTypes: selectedSeatTypes,
+        acTypes: selectedAcTypes,
+        times: selectedTimes,
+      }, {
+        params: { departureCity, arrivalCity, date, page, pageSize },
+      });
 
-        setTimeout(() => {
-          setBuses(data.buses);
-          setFilteredBuses(data.buses);
-          setTotalPages(data.totalPages);
-          setLoading(false);
-        }, Math.max(minDelay - elapsed, 0));
-      } catch (err) {
-        console.error(err);
+      const elapsed = Date.now() - start;
+      const minDelay = 1000;
+
+     
+
+      setTimeout(() => {
+        setBuses(data.buses);
+        setTotalPages(data.totalPage); // ✅ backend sends totalPage
         setLoading(false);
-      }
-    };
-    fetchBuses();
-  }, [departureCity, arrivalCity, date, page]);
+      }, Math.max(minDelay - elapsed, 0));
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  };
 
-  // Filters
   useEffect(() => {
-    const filtered = buses.filter((bus) => {
-      const seatMatch = selectedSeatTypes.length ? selectedSeatTypes.includes(bus.seatType) : true;
-      const acMatch = selectedAcTypes.length ? selectedAcTypes.includes(bus.ac ? "AC" : "NON-AC") : true;
-      const timeMatch = selectedTimes.length ? selectedTimes.includes(bus.slot.charAt(0).toUpperCase() + bus.slot.slice(1)) : true;
-      return seatMatch && acMatch && timeMatch;
-    });
-    setFilteredBuses(filtered);
-  }, [selectedSeatTypes, selectedAcTypes, selectedTimes, buses]);
+    fetchBuses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [departureCity, arrivalCity, date, page, selectedSeatTypes, selectedAcTypes, selectedTimes]);
 
   const toggleSelection = (item: string, state: string[], setState: any) => {
     if (state.includes(item)) setState(state.filter((i) => i !== item));
@@ -95,9 +90,24 @@ const ResultsPage = () => {
   };
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
-      <aside className="w-1/4 p-6 bg-white shadow-md">
+    <div className="flex flex-col md:flex-row bg-gray-50 min-h-screen">
+      {/* Mobile Filter Toggle */}
+      <div className="md:hidden p-4 bg-white shadow flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Filters</h2>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="px-3 py-1 rounded bg-black text-white"
+        >
+          {showFilters ? "Close" : "Open"}
+        </button>
+      </div>
+
+      {/* Sidebar Filters */}
+      <aside
+        className={`${showFilters ? "block" : "hidden"} md:block w-full md:w-1/4 p-6 bg-white shadow-md`}
+      >
         <h2 className="text-xl font-semibold mb-4">Filters</h2>
+
         {/* Seat Type */}
         <div className="mb-4">
           <h3 className="font-semibold mb-2">Seat Type</h3>
@@ -107,9 +117,7 @@ const ResultsPage = () => {
                 type="checkbox"
                 className="mr-2"
                 checked={selectedSeatTypes.includes(type)}
-                onChange={() =>
-                  toggleSelection(type, selectedSeatTypes, setSelectedSeatTypes)
-                }
+                onChange={() => toggleSelection(type, selectedSeatTypes, setSelectedSeatTypes)}
               />
               {type}
             </label>
@@ -125,9 +133,7 @@ const ResultsPage = () => {
                 type="checkbox"
                 className="mr-2"
                 checked={selectedAcTypes.includes(type)}
-                onChange={() =>
-                  toggleSelection(type, selectedAcTypes, setSelectedAcTypes)
-                }
+                onChange={() => toggleSelection(type, selectedAcTypes, setSelectedAcTypes)}
               />
               {type}
             </label>
@@ -150,8 +156,9 @@ const ResultsPage = () => {
           ))}
         </div>
       </aside>
+
       {/* Main Content */}
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 md:p-6">
         <h2 className="text-2xl font-semibold mb-6">Available Buses</h2>
 
         {/* Loader */}
@@ -161,23 +168,27 @@ const ResultsPage = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredBuses.map((bus, index) => (
+            {buses.map((bus, index) => (
               <div
                 key={index}
-                className="bg-white rounded shadow p-4 flex justify-between items-center"
+                className="bg-white rounded shadow p-4 flex flex-col md:flex-row justify-between md:items-center gap-4"
               >
                 <div>
                   <h3 className="font-semibold text-lg">{bus.name}</h3>
-                  <p className="text-gray-600">
-                    {bus.stops.map((s) => s.city).join(" → ")}
-                  </p>
+                  <p className="text-gray-600">{bus.stops.map((s) => s.city).join(" → ")}</p>
                   <p className="text-gray-600 mt-1">
                     Date: {new Date(bus.tripDate).toLocaleDateString()} | Time:{" "}
                     {bus.slot.charAt(0).toUpperCase() + bus.slot.slice(1)}
                   </p>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">{bus.seatType}</span>
-                    <span className={`text-xs px-2 py-1 rounded ${bus.ac ? "bg-yellow-100 text-yellow-800" : "bg-gray-200 text-gray-700"}`}>
+                    <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
+                      {bus.seatType}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                        bus.ac ? "bg-yellow-100 text-yellow-800" : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
                       {bus.ac ? "AC" : "NON-AC"}
                     </span>
                     <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
@@ -185,7 +196,7 @@ const ResultsPage = () => {
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-start md:items-end">
                   <span className="text-green-600 font-semibold text-lg">₹{bus.price}</span>
                   <button
                     className={`mt-2 px-4 py-1 rounded ${
@@ -202,7 +213,7 @@ const ResultsPage = () => {
               </div>
             ))}
 
-            {filteredBuses.length === 0 && (
+            {buses.length === 0 && (
               <p className="text-gray-500 text-center mt-6">No buses found for selected filters.</p>
             )}
           </div>
@@ -210,7 +221,7 @@ const ResultsPage = () => {
 
         {/* Pagination */}
         {!loading && (
-          <div className="flex justify-center mt-6 gap-2">
+          <div className="flex flex-wrap justify-center mt-6 gap-2">
             <button
               onClick={() => goToPage(page - 1)}
               disabled={page === 1}
@@ -222,9 +233,7 @@ const ResultsPage = () => {
               <button
                 key={idx + 1}
                 onClick={() => goToPage(idx + 1)}
-                className={`px-3 py-1 rounded ${
-                  page === idx + 1 ? "bg-black text-white" : "bg-gray-200"
-                }`}
+                className={`px-3 py-1 rounded ${page === idx + 1 ? "bg-black text-white" : "bg-gray-200"}`}
               >
                 {idx + 1}
               </button>
@@ -242,7 +251,5 @@ const ResultsPage = () => {
     </div>
   );
 };
-
-
 
 export default ResultsPage;
