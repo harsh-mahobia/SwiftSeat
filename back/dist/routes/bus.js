@@ -24,6 +24,6 @@ const router = express_1.default.Router();
 //       });
 //     }
 //   });
-router.get("/", busController_1.getBuses); // GET /api/buses
+router.post("/", busController_1.getBuses); // GET /api/buses
 router.get("/:busId", busController_1.getBusById); // GET /api/buses/:busId
 exports.default = router;

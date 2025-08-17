@@ -23,7 +23,7 @@ const router = express.Router();
 //       });
 //     }
 //   });
-router.get("/", getBuses);       // GET /api/buses
+router.post("/", getBuses);       // GET /api/buses
 router.get("/:busId", getBusById); // GET /api/buses/:busId
 
 export default router;
