@@ -6,7 +6,7 @@ import { SeatLock } from "../models/SeatLock";
 
 // GET /api/buses
 export const getBuses = asyncHandler(async (req: Request, res: Response) => {
-  const { departureCity, arrivalCity, page = 1, pageSize = 10 } = req.query;
+  const { departureCity, arrivalCity, page = 1, pageSize = 10, date } = req.query;
 
   if (!departureCity || !arrivalCity) {
     const error: any = new Error("departureCity and arrivalCity are required");
@@ -24,10 +24,11 @@ export const getBuses = asyncHandler(async (req: Request, res: Response) => {
   const acArray = req.body.acTypes ? toStrArray(req.body.acTypes) : [];
   const timeArray = req.body.times ? toStrArray(req.body.times) : [];
 
+  // 🔑 Use regex for case-insensitive matching
   const query: any = {
     $and: [
-      { stops: { $elemMatch: { city: departureCity.toString() } } },
-      { stops: { $elemMatch: { city: arrivalCity.toString() } } },
+      { stops: { $elemMatch: { city: { $regex: `^${departureCity}$`, $options: "i" } } } },
+      { stops: { $elemMatch: { city: { $regex: `^${arrivalCity}$`, $options: "i" } } } },
     ],
   };
 
@@ -39,13 +40,22 @@ export const getBuses = asyncHandler(async (req: Request, res: Response) => {
     query.slot = { $in: timeArray.map((t) => t.toLowerCase()) };
   }
 
+  if (date) {
+    const startDate = date.toString();
+  
+    query.tripDate = { $gte: startDate };
+  }
+
+  // console.log("Final Query: ", JSON.stringify(query, null, 2));
   let buses = await Bus.find(query);
 
-  // Ensure correct city order
+
   buses = buses.filter((bus) => {
-    const cities = bus.stops.map((s) => s.city);
-    return cities.indexOf(departureCity.toString()) < cities.indexOf(arrivalCity.toString());
+    const cities = bus.stops.map((s) => s.city.toLowerCase());
+    return cities.indexOf(departureCity.toString().toLowerCase()) <
+           cities.indexOf(arrivalCity.toString().toLowerCase());
   });
+  
 
   const totalPage = Math.ceil(buses.length / Number(pageSize));
   buses = buses.slice(Number(pageSize) * (Number(page) - 1), Number(page) * Number(pageSize));
@@ -58,6 +68,7 @@ export const getBuses = asyncHandler(async (req: Request, res: Response) => {
     buses,
   });
 });
+
 
 // GET /api/buses/:busId
 export const getBusById = asyncHandler(async (req: Request, res: Response) => {
@@ -109,7 +120,7 @@ export const getBusById = asyncHandler(async (req: Request, res: Response) => {
       SeatLock.deleteMany({ _id: { $in: expiredLocks.map((lock) => lock._id) } }),
     ]);
 
-    console.log("Expired locks cleaned", { unlockedSeats, justRemovedFromLocks });
+    // console.log("Expired locks cleaned", { unlockedSeats, justRemovedFromLocks });
   }
 
   return res.status(200).json({
