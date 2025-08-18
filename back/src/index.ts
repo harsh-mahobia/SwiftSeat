@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db";
 import busRoutes from "./routes/bus";
 import bookingRoutes from "./routes/bookings";
+import lockRoutes from './routes/lock'
 import { errorHandler } from "./middleware/ErrorHandler";
 import cors from "cors";
 
@@ -23,8 +24,9 @@ app.get("/", (req, res)=>{
 })
 app.use("/api/buses", busRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/seats", lockRoutes )
 
-// Error Handler (MUST be last)
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;

@@ -7,17 +7,20 @@ const uuid_1 = require("uuid");
 const createBooking = async (req, res) => {
     try {
         const { busId, seats, passengers, totalPrice } = req.body;
-        console.log(seats);
-        if (!busId || !seats || !passengers || !totalPrice) {
+        if (!busId || !seats || !Array.isArray(seats) || seats.length === 0 || !passengers || !totalPrice) {
             return res.status(400).json({ message: "Missing required fields" });
         }
-        // Check if trip exists
-        const trip = await Bus_1.Bus.findById(busId);
-        if (!trip)
+        const bus = await Bus_1.Bus.findById(busId);
+        if (!bus)
             return res.status(404).json({ message: "Bus not found" });
-        // Generate booking ID
+        const unavailableSeats = seats.filter((seatNum) => bus.seatsBooked.some((s) => s.number === seatNum && s.available === false));
+        if (unavailableSeats.length > 0) {
+            return res.status(400).json({
+                message: "Some seats are already booked",
+                unavailableSeats,
+            });
+        }
         const bookingId = (0, uuid_1.v4)();
-        // Save booking
         const booking = new Bookings_1.Booking({
             busId,
             seats,
@@ -27,9 +30,17 @@ const createBooking = async (req, res) => {
             bookedAt: new Date(),
         });
         await booking.save();
-        // Update trip with booked seats
-        trip.seatsBooked.push(...seats.map((s) => ({ number: s, available: false })));
-        await trip.save();
+        // Update bus seats availability
+        seats.forEach((seatNum) => {
+            const seatIndex = bus.seatsBooked.findIndex((s) => s.number === seatNum);
+            if (seatIndex >= 0) {
+                bus.seatsBooked[seatIndex].available = false; // mark existing seat unavailable
+            }
+            else {
+                bus.seatsBooked.push({ number: seatNum, available: false }); // add new entry
+            }
+        });
+        await bus.save();
         res.status(201).json({
             message: "Booking successful",
             booking,

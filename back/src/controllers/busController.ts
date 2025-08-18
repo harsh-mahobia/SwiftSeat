@@ -1,19 +1,18 @@
 import { Request, Response } from "express";
 import { Bus } from "../models/Bus";
 import { asyncHandler } from "../middleware/ErrorHandler";
+import { Booking } from "../models/Bookings";
+import { SeatLock } from "../models/SeatLock";
 
-
-//GET /api/buses
+// GET /api/buses
 export const getBuses = asyncHandler(async (req: Request, res: Response) => {
-  const { departureCity, arrivalCity, date, page = 1, pageSize = 10} = req.query;
-  
-  // console.log(seatTypes, typeof acTypes, times)
+  const { departureCity, arrivalCity, page = 1, pageSize = 10 } = req.query;
+
   if (!departureCity || !arrivalCity) {
-    res.status(400);
-    throw new Error("departureCity and arrivalCity are required");
+    const error: any = new Error("departureCity and arrivalCity are required");
+    error.statusCode = 400;
+    throw error;
   }
-
-
 
   const toStrArray = (param: unknown): string[] => {
     if (!param) return [];
@@ -21,10 +20,10 @@ export const getBuses = asyncHandler(async (req: Request, res: Response) => {
     return param.toString().split(",").map((s) => s.trim()).filter(Boolean);
   };
 
-  
-  const seatArray = req.body.seatTypes!==undefined ? toStrArray(req.body.seatTypes) : [];
-  const acArray = req.body.acTypes!==undefined ? toStrArray(req.body.acTypes) : [];
-  const timeArray = req.body.times!==undefined ? toStrArray(req.body.times) : [];
+  const seatArray = req.body.seatTypes ? toStrArray(req.body.seatTypes) : [];
+  const acArray = req.body.acTypes ? toStrArray(req.body.acTypes) : [];
+  const timeArray = req.body.times ? toStrArray(req.body.times) : [];
+
   const query: any = {
     $and: [
       { stops: { $elemMatch: { city: departureCity.toString() } } },
@@ -32,61 +31,89 @@ export const getBuses = asyncHandler(async (req: Request, res: Response) => {
     ],
   };
 
-  // // ✅ Date filter (fix)
-  // if (date) {
-  //   const tripDate = new Date(date.toString());
-  //   const startOfDay = new Date(tripDate);
-  //   startOfDay.setHours(0, 0, 0, 0);
-
-  //   const endOfDay = new Date(tripDate);
-  //   endOfDay.setHours(23, 59, 59, 999);
-
-  //   query.tripDate = { $gte: date.toString() };
-  // }
-
-  if (seatArray.length > 0) {
-    query.seatType = { $in: seatArray };
-  }
-
+  if (seatArray.length > 0) query.seatType = { $in: seatArray };
   if (acArray.length > 0) {
-    query.ac = { $in: acArray.map((t) => (t.toUpperCase() === "AC" ? true : false)) };
+    query.ac = { $in: acArray.map((t) => t.toUpperCase() === "AC") };
   }
-
   if (timeArray.length > 0) {
     query.slot = { $in: timeArray.map((t) => t.toLowerCase()) };
   }
 
   let buses = await Bus.find(query);
 
+  // Ensure correct city order
   buses = buses.filter((bus) => {
     const cities = bus.stops.map((s) => s.city);
     return cities.indexOf(departureCity.toString()) < cities.indexOf(arrivalCity.toString());
   });
-  let totalPage = Math.ceil(buses.length/Number(pageSize)); 
-  buses = buses.slice(Number(pageSize) * (Number(page)-1), Number(page) * Number(pageSize));
 
-
-
+  const totalPage = Math.ceil(buses.length / Number(pageSize));
+  buses = buses.slice(Number(pageSize) * (Number(page) - 1), Number(page) * Number(pageSize));
 
   res.json({
     success: true,
-    totalPage: totalPage,
+    totalPage,
     totalBuses: buses.length,
-    currentPage : page,
-    buses
+    currentPage: page,
+    buses,
   });
 });
 
-
-
-
-
 // GET /api/buses/:busId
 export const getBusById = asyncHandler(async (req: Request, res: Response) => {
-  const bus = await Bus.findById(req.params.busId);
-  if (!bus) {
-    res.status(404);
-    throw new Error("Bus not found");
+  const { busId } = req.params;
+
+  if (!busId) {
+    const error: any = new Error("busId is required");
+    error.statusCode = 400;
+    throw error;
   }
-  res.json({ success: true, bus });
+
+  let bus = await Bus.findById(busId);
+  if (!bus) {
+    const error: any = new Error("Bus not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const now = new Date();
+
+  // Find expired locks
+  const expiredLocks = await SeatLock.find({
+    busId,
+    expiresAt: { $lte: now },
+  });
+
+  if (expiredLocks.length > 0) {
+    const unlockedSeats: number[] = [];
+    const justRemovedFromLocks: number[] = [];
+
+    for (const lock of expiredLocks) {
+      for (const seat of lock.seatNumber) {
+        const isBooked = await Booking.exists({
+          busId,
+          seats: { $in: [seat] },
+        });
+
+        if (isBooked) {
+          justRemovedFromLocks.push(seat); // booked → only remove from lock
+        } else {
+          bus.seatsBooked = bus.seatsBooked.filter((s: any) => s.number !== seat); // not booked → free seat
+          unlockedSeats.push(seat);
+        }
+      }
+    }
+
+    await Promise.all([
+      bus.save(),
+      SeatLock.deleteMany({ _id: { $in: expiredLocks.map((lock) => lock._id) } }),
+    ]);
+
+    console.log("Expired locks cleaned", { unlockedSeats, justRemovedFromLocks });
+  }
+
+  return res.status(200).json({
+    success: true,
+    bus,
+  });
 });

@@ -3,8 +3,7 @@ import { Schema, model, Document } from "mongoose";
 
 export interface SeatLockDocument extends Document {
   busId: string;
-  seatNumber: number;
-  lockedBy: string; // sessionId/userId
+  seatNumber: number[];
   lockedAt: Date;
   expiresAt: Date;
 }
@@ -12,8 +11,7 @@ export interface SeatLockDocument extends Document {
 const SeatLockSchema = new Schema<SeatLockDocument>(
   {
     busId: { type: String, required: true },
-    seatNumber: { type: Number, required: true },
-    lockedBy: { type: String, required: true },
+    seatNumber: { type: [Number], required: true },
     lockedAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true },
   },

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../config/axios";
+import { toast } from "react-toastify";
 
 interface Stop {
   city: string;
@@ -42,7 +43,7 @@ const ResultsPage = () => {
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
-  const [showFilters, setShowFilters] = useState<boolean>(false); // 👈 mobile toggle
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
   const pageSize = 5;
 
@@ -50,27 +51,35 @@ const ResultsPage = () => {
     setLoading(true);
     try {
       const start = Date.now();
-      
-      const { data } = await api.post("/api/buses",{
-        seatTypes: selectedSeatTypes,
-        acTypes: selectedAcTypes,
-        times: selectedTimes,
-      }, {
-        params: { departureCity, arrivalCity, date, page, pageSize },
-      });
+
+      const { data } = await api.post(
+        "/api/buses",
+        {
+          seatTypes: selectedSeatTypes,
+          acTypes: selectedAcTypes,
+          times: selectedTimes,
+        },
+        {
+          params: { departureCity, arrivalCity, date, page, pageSize },
+        }
+      );
 
       const elapsed = Date.now() - start;
       const minDelay = 1000;
 
-     
-
       setTimeout(() => {
         setBuses(data.buses);
-        setTotalPages(data.totalPage); // ✅ backend sends totalPage
+        setTotalPages(data.totalPage);
         setLoading(false);
+
+        if (data.buses.length === 0) {
+          toast.info("No buses found for selected filters", { autoClose: 2000 });
+        } 
+        
       }, Math.max(minDelay - elapsed, 0));
     } catch (err) {
       console.error(err);
+      toast.error("Failed to fetch buses. Please try again later.");
       setLoading(false);
     }
   };
@@ -204,18 +213,21 @@ const ResultsPage = () => {
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-black text-white hover:bg-gray-800"
                     }`}
-                    disabled={bus.seatsBooked.length >= bus.capacity}
-                    onClick={() => navigate(`/bus/${bus._id}`)}
+                    onClick={() => {
+                      if (bus.seatsBooked.length >= bus.capacity) {
+                        toast.warn("This bus is full. Please choose another one.", { autoClose: 2000 });
+                      } else {
+                        navigate(`/bus/${bus._id}`, {
+                          state: { departureCity, arrivalCity, date },
+                        });
+                      }
+                    }}
                   >
                     {bus.seatsBooked.length >= bus.capacity ? "Full" : "Book Now"}
                   </button>
                 </div>
               </div>
             ))}
-
-            {buses.length === 0 && (
-              <p className="text-gray-500 text-center mt-6">No buses found for selected filters.</p>
-            )}
           </div>
         )}
 

@@ -3,13 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBusById = exports.getBuses = void 0;
 const Bus_1 = require("../models/Bus");
 const ErrorHandler_1 = require("../middleware/ErrorHandler");
-//GET /api/buses
+const Bookings_1 = require("../models/Bookings");
+const SeatLock_1 = require("../models/SeatLock");
+// GET /api/buses
 exports.getBuses = (0, ErrorHandler_1.asyncHandler)(async (req, res) => {
-    const { departureCity, arrivalCity, date, page = 1, pageSize = 10 } = req.query;
-    // console.log(seatTypes, typeof acTypes, times)
+    const { departureCity, arrivalCity, page = 1, pageSize = 10 } = req.query;
     if (!departureCity || !arrivalCity) {
-        res.status(400);
-        throw new Error("departureCity and arrivalCity are required");
+        const error = new Error("departureCity and arrivalCity are required");
+        error.statusCode = 400;
+        throw error;
     }
     const toStrArray = (param) => {
         if (!param)
@@ -18,54 +20,85 @@ exports.getBuses = (0, ErrorHandler_1.asyncHandler)(async (req, res) => {
             return param.map(String);
         return param.toString().split(",").map((s) => s.trim()).filter(Boolean);
     };
-    const seatArray = req.body.seatTypes !== undefined ? toStrArray(req.body.seatTypes) : [];
-    const acArray = req.body.acTypes !== undefined ? toStrArray(req.body.acTypes) : [];
-    const timeArray = req.body.times !== undefined ? toStrArray(req.body.times) : [];
+    const seatArray = req.body.seatTypes ? toStrArray(req.body.seatTypes) : [];
+    const acArray = req.body.acTypes ? toStrArray(req.body.acTypes) : [];
+    const timeArray = req.body.times ? toStrArray(req.body.times) : [];
     const query = {
         $and: [
             { stops: { $elemMatch: { city: departureCity.toString() } } },
             { stops: { $elemMatch: { city: arrivalCity.toString() } } },
         ],
     };
-    // // ✅ Date filter (fix)
-    // if (date) {
-    //   const tripDate = new Date(date.toString());
-    //   const startOfDay = new Date(tripDate);
-    //   startOfDay.setHours(0, 0, 0, 0);
-    //   const endOfDay = new Date(tripDate);
-    //   endOfDay.setHours(23, 59, 59, 999);
-    //   query.tripDate = { $gte: date.toString() };
-    // }
-    if (seatArray.length > 0) {
+    if (seatArray.length > 0)
         query.seatType = { $in: seatArray };
-    }
     if (acArray.length > 0) {
-        query.ac = { $in: acArray.map((t) => (t.toUpperCase() === "AC" ? true : false)) };
+        query.ac = { $in: acArray.map((t) => t.toUpperCase() === "AC") };
     }
     if (timeArray.length > 0) {
         query.slot = { $in: timeArray.map((t) => t.toLowerCase()) };
     }
     let buses = await Bus_1.Bus.find(query);
+    // Ensure correct city order
     buses = buses.filter((bus) => {
         const cities = bus.stops.map((s) => s.city);
         return cities.indexOf(departureCity.toString()) < cities.indexOf(arrivalCity.toString());
     });
-    let totalPage = Math.ceil(buses.length / Number(pageSize));
+    const totalPage = Math.ceil(buses.length / Number(pageSize));
     buses = buses.slice(Number(pageSize) * (Number(page) - 1), Number(page) * Number(pageSize));
     res.json({
         success: true,
-        totalPage: totalPage,
+        totalPage,
         totalBuses: buses.length,
         currentPage: page,
-        buses
+        buses,
     });
 });
 // GET /api/buses/:busId
 exports.getBusById = (0, ErrorHandler_1.asyncHandler)(async (req, res) => {
-    const bus = await Bus_1.Bus.findById(req.params.busId);
-    if (!bus) {
-        res.status(404);
-        throw new Error("Bus not found");
+    const { busId } = req.params;
+    if (!busId) {
+        const error = new Error("busId is required");
+        error.statusCode = 400;
+        throw error;
     }
-    res.json({ success: true, bus });
+    let bus = await Bus_1.Bus.findById(busId);
+    if (!bus) {
+        const error = new Error("Bus not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    const now = new Date();
+    // Find expired locks
+    const expiredLocks = await SeatLock_1.SeatLock.find({
+        busId,
+        expiresAt: { $lte: now },
+    });
+    if (expiredLocks.length > 0) {
+        const unlockedSeats = [];
+        const justRemovedFromLocks = [];
+        for (const lock of expiredLocks) {
+            for (const seat of lock.seatNumber) {
+                const isBooked = await Bookings_1.Booking.exists({
+                    busId,
+                    seats: { $in: [seat] },
+                });
+                if (isBooked) {
+                    justRemovedFromLocks.push(seat); // booked → only remove from lock
+                }
+                else {
+                    bus.seatsBooked = bus.seatsBooked.filter((s) => s.number !== seat); // not booked → free seat
+                    unlockedSeats.push(seat);
+                }
+            }
+        }
+        await Promise.all([
+            bus.save(),
+            SeatLock_1.SeatLock.deleteMany({ _id: { $in: expiredLocks.map((lock) => lock._id) } }),
+        ]);
+        console.log("Expired locks cleaned", { unlockedSeats, justRemovedFromLocks });
+    }
+    return res.status(200).json({
+        success: true,
+        bus,
+    });
 });

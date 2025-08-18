@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import api from "../config/axios";
+import { toast } from "react-toastify";
+
 
 interface Stop {
   city: string;
@@ -29,7 +31,12 @@ interface Bus {
 
 const BusDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { state } = useLocation();
   const navigate = useNavigate();
+  
+
+  const departureCity = state?.departureCity || '';
+  const arrivalCity = state?.arrivalCity || '';
 
   const [bus, setBus] = useState<Bus | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
@@ -41,7 +48,7 @@ const BusDetailsPage: React.FC = () => {
         const { data } = await api.get(`/api/buses/${id?.toString()}`);
         setBus(data.bus);
       } catch (err) {
-
+        toast.error("Error fetching bus details");
         console.error("Error fetching bus:", err);
       } finally {
         setLoading(false);
@@ -51,16 +58,39 @@ const BusDetailsPage: React.FC = () => {
   }, [id]);
 
   const toggleSeat = (seatNumber: number, available: boolean) => {
-    if (!available) return; 
-    setSelectedSeats((prev) =>
-      prev.includes(seatNumber) ? prev.filter((s) => s !== seatNumber) : [...prev, seatNumber]
-    );
+    if (!available) {
+      toast.warning(`Seat ${seatNumber} is already booked`);
+      return;
+    }
+
+    setSelectedSeats((prev) => {
+      if (prev.includes(seatNumber)) {
+        return prev.filter((s) => s !== seatNumber);
+      } else {
+        return [...prev, seatNumber];
+      }
+    });
   };
 
-  const handleProceedToPayment = () => {
-    navigate("/payment", {
-      state: { bus, selectedSeats, totalPrice: selectedSeats.length * (bus?.price || 0) },
-    });
+  const handleProceedToPayment = async () => {
+    if (selectedSeats.length === 0) {
+      toast.warning("Please select at least one seat before proceeding");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data } = await api.post(`/api/seats/lock`, { busId: id, seats: selectedSeats });
+      toast.success("Seats locked successfully! Proceeding to Details...");
+      navigate("/payment", {
+        state: { bus, selectedSeats, totalPrice: selectedSeats.length * (bus?.price || 0) },
+      });
+    } catch (err) {
+      toast.error("Unable to lock seats. Please try again.");
+      console.log("Error locking seats", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -78,7 +108,7 @@ const BusDetailsPage: React.FC = () => {
         <h2 className="text-xl font-semibold mb-2">{bus.name}</h2>
         <p className="text-gray-600">{bus.ac ? "AC" : "NON-AC"} {bus.seatType}</p>
         <div className="flex justify-between text-gray-700 mt-2">
-          <span>{bus.stops[0].city} → {bus.stops[bus.stops.length - 1].city}</span>
+          <span>{departureCity} → {arrivalCity}</span>
           <span>{new Date(bus.tripDate).toLocaleDateString()}</span>
         </div>
         <div className="mt-1 text-gray-500">
@@ -93,7 +123,7 @@ const BusDetailsPage: React.FC = () => {
           {Array.from({ length: bus.capacity }, (_, i) => {
             const seatNum = i + 1;
             const seat = bus.seatsBooked.find((s) => s.number === seatNum);
-            const available = seat ? seat.available : true;
+            const available = seat ? false : true;
             const isSelected = selectedSeats.includes(seatNum);
 
             return (

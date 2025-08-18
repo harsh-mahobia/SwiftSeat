@@ -7,20 +7,26 @@ export const createBooking = async (req: Request, res: Response) => {
   try {
     const { busId, seats, passengers, totalPrice } = req.body;
 
-    console.log(seats);
-    if (!busId || !seats || !passengers || !totalPrice) {
+    if (!busId || !seats || !Array.isArray(seats) || seats.length === 0 || !passengers || !totalPrice) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Check if trip exists
-    const trip = await Bus.findById(busId);
-    if (!trip) return res.status(404).json({ message: "Bus not found" });
+    const bus = await Bus.findById(busId);
+    if (!bus) return res.status(404).json({ message: "Bus not found" });
 
+    const unavailableSeats = seats.filter((seatNum: number) =>
+      bus.seatsBooked.some((s: any) => s.number === seatNum && s.available === false)
+    );
 
-    // Generate booking ID
+    if (unavailableSeats.length > 0) {
+      return res.status(400).json({
+        message: "Some seats are already booked",
+        unavailableSeats,
+      });
+    }
+
     const bookingId = uuidv4();
 
-    // Save booking
     const booking = new Booking({
       busId,
       seats,
@@ -32,9 +38,17 @@ export const createBooking = async (req: Request, res: Response) => {
 
     await booking.save();
 
-    // Update trip with booked seats
-    trip.seatsBooked.push(...seats.map((s: number) => ({ number: s, available : false })));
-    await trip.save()
+    // Update bus seats availability
+    seats.forEach((seatNum: number) => {
+      const seatIndex = bus.seatsBooked.findIndex((s: any) => s.number === seatNum);
+      if (seatIndex >= 0) {
+        bus.seatsBooked[seatIndex].available = false; // mark existing seat unavailable
+      } else {
+        bus.seatsBooked.push({ number: seatNum, available: false }); // add new entry
+      }
+    });
+
+    await bus.save();
 
     res.status(201).json({
       message: "Booking successful",
@@ -45,4 +59,3 @@ export const createBooking = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-

@@ -7,7 +7,7 @@ const PassengerSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     age: { type: Number, required: true },
     gender: { type: String, enum: ["male", "female", "other"], required: true },
-});
+}, { _id: false });
 const BookingSchema = new mongoose_1.Schema({
     busId: { type: String, required: true },
     seats: [{ type: Number, required: true }],

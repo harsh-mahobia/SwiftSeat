@@ -3,10 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// src/routes/busRoutes.ts
 const express_1 = __importDefault(require("express"));
-const busController_1 = require("../controllers/busController");
+const lockController_1 = require("../controllers/lockController");
 const router = express_1.default.Router();
-router.post("/", busController_1.getBuses); // GET /api/buses
-router.get("/:busId", busController_1.getBusById); // GET /api/buses/:busId
+router.post("/lock", lockController_1.lockController);
 exports.default = router;

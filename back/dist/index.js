@@ -8,6 +8,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const db_1 = __importDefault(require("./config/db"));
 const bus_1 = __importDefault(require("./routes/bus"));
 const bookings_1 = __importDefault(require("./routes/bookings"));
+const lock_1 = __importDefault(require("./routes/lock"));
 const ErrorHandler_1 = require("./middleware/ErrorHandler");
 const cors_1 = __importDefault(require("cors"));
 dotenv_1.default.config();
@@ -24,7 +25,7 @@ app.get("/", (req, res) => {
 });
 app.use("/api/buses", bus_1.default);
 app.use("/api/bookings", bookings_1.default);
-// Error Handler (MUST be last)
+app.use("/api/seats", lock_1.default);
 app.use(ErrorHandler_1.errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

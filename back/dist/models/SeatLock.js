@@ -5,8 +5,7 @@ exports.SeatLock = void 0;
 const mongoose_1 = require("mongoose");
 const SeatLockSchema = new mongoose_1.Schema({
     busId: { type: String, required: true },
-    seatNumber: { type: Number, required: true },
-    lockedBy: { type: String, required: true },
+    seatNumber: { type: [Number], required: true },
     lockedAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true },
 }, { timestamps: true, collection: "SeatLock" });
