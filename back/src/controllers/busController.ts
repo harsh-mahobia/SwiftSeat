@@ -24,11 +24,10 @@ export const getBuses = asyncHandler(async (req: Request, res: Response) => {
   const acArray = req.body.acTypes ? toStrArray(req.body.acTypes) : [];
   const timeArray = req.body.times ? toStrArray(req.body.times) : [];
 
-  // 🔑 Use regex for case-insensitive matching
   const query: any = {
     $and: [
-      { stops: { $elemMatch: { city: { $regex: `^${departureCity}$`, $options: "i" } } } },
-      { stops: { $elemMatch: { city: { $regex: `^${arrivalCity}$`, $options: "i" } } } },
+      { stops: { $elemMatch: { city: { $regex: `^${departureCity.toString().trim()}$`, $options: "i" } } } },
+      { stops: { $elemMatch: { city: { $regex: `^${arrivalCity.toString().trim()}$`, $options: "i" } } } },
     ],
   };
 
@@ -51,9 +50,9 @@ export const getBuses = asyncHandler(async (req: Request, res: Response) => {
 
 
   buses = buses.filter((bus) => {
-    const cities = bus.stops.map((s) => s.city.toLowerCase());
-    return cities.indexOf(departureCity.toString().toLowerCase()) <
-           cities.indexOf(arrivalCity.toString().toLowerCase());
+    const cities = bus.stops.map((s) => s.city.toLowerCase().trim());
+    return cities.indexOf(departureCity.toString().toLowerCase().trim()) <
+           cities.indexOf(arrivalCity.toString().toLowerCase().trim());
   });
   
 
