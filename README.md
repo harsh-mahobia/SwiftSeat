@@ -128,3 +128,12 @@ The frontend application provides the following routes for user interaction:
 - CORS is enabled for cross-origin requests
 - City validation is enforced for all route searches
 - Frontend deployed at: [swift-seat-mu.vercel.app](https://swift-seat-mu.vercel.app)
+
+## Screenshorts of dataflow
+
+<img width="1912" height="958" alt="Screenshot 2025-08-19 204738" src="https://github.com/user-attachments/assets/6107bcd3-25a4-46e3-83c6-e226fffd746e" />
+<img width="1898" height="958" alt="Screenshot 2025-08-19 204720" src="https://github.com/user-attachments/assets/d6f01fd0-f42c-405c-b07a-bd0a18e94b1d" />
+<img width="1919" height="946" alt="Screenshot 2025-08-19 204820" src="https://github.com/user-attachments/assets/f11a1f40-5de9-4954-a993-1f1b94513c10" />
+<img width="1914" height="956" alt="Screenshot 2025-08-19 204836" src="https://github.com/user-attachments/assets/b1abfdf5-02dd-4a53-91f7-390d529c6e7b" />
+<img width="1860" height="936" alt="Screenshot 2025-08-19 204856" src="https://github.com/user-attachments/assets/89a91930-b009-48c4-937a-d1cb6bfa9cdc" />
+
