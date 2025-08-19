@@ -1,112 +1,130 @@
-# SwiftSeat
+# SwiftSeat API Documentation
 
-SwiftSeat is a bus seat booking platform for intercity bus travel. It allows users to search for available buses, view bus details, select seats, and make bookings seamlessly.  
-**Note:** Currently, SwiftSeat only supports bookings for routes within Hyderabad, Raipur, and Bangalore.
-
----
-
-## Table of Contents
-
-- [Supported Cities](#supported-cities)
-- [Backend API Routes](#backend-api-routes)
-  - [Bus Search & Details (`/api/buses`)](#bus-search--details-apibuses)
-  - [Bookings (`/api/bookings`)](#bookings-apibookings)
-- [Frontend Application](#frontend-application)
-  - [Main Pages and Features](#main-pages-and-features)
-- [Running Locally](#running-locally)
-- [Summary](#summary)
-
----
-
-## Supported Cities
-
-- Hyderabad
-- Raipur
-- Bangalore
-
-SwiftSeat currently only supports searching and booking buses between these three cities.
-
----
+> **Live Demo**: [swift-seat-mu.vercel.app](https://swift-seat-mu.vercel.app)
+>
+> **Important Notice**: SwiftSeat currently only operates bus services between three cities:
+> - Raipur
+> - Bangalore
+> - Hyderabad
+>
+> Bookings are only available for routes connecting these three cities.
 
 ## Backend API Routes
 
-### Bus Search & Details (`/api/buses`)
+SwiftSeat provides the following API endpoints for bus searching, seat management, and booking functionality:
 
-- **`POST /api/buses`**  
-  Search for buses between supported cities with filters (date, seat type, AC, time slot, pagination).  
-  **Body:**  
-    - `departureCity` (required)
-    - `arrivalCity` (required)
-    - `date` (optional)
-    - `seatTypes`, `acTypes`, `times` (optional arrays or comma-separated)
-    - `page`, `pageSize` (optional)
-  **Response:** List of buses.
+### 1. Bus Search & Details (`/api/buses`)
 
-- **`GET /api/buses/:busId`**  
-  Get detailed info for a specific bus.
+#### POST `/api/buses`
+Search for buses between supported cities with various filters.
 
----
+**Request Body:**
+- `departureCity` (required): Starting city (must be one of: Raipur, Bangalore, or Hyderabad)
+- `arrivalCity` (required): Destination city (must be one of: Raipur, Bangalore, or Hyderabad)
+- `date` (required): Journey date
+- `seatTypes` (optional): Array or comma-separated values ['seater', 'semi-sleeper', 'sleeper']
+- `acTypes` (optional): Array or comma-separated values ['AC', 'NON-AC']
+- `times` (optional): Array or comma-separated values ['Morning', 'Afternoon', 'Evening', 'Night']
+- `page` (optional): Page number for pagination (default: 1)
+- `pageSize` (optional): Results per page (default: 10)
 
-### Bookings (`/api/bookings`)
+**Response:**
+```json
+{
+  "success": true,
+  "totalPage": number,
+  "totalBuses": number,
+  "currentPage": number,
+  "buses": Array<Bus>
+}
+```
 
-- **`POST /api/bookings`**  
-  Book seats on a bus.  
-  **Body:**  
-    - `busId` (required)
-    - `seats` (required, array of seat numbers)
-    - `passengers` (required, array with name, age, gender)
-    - `totalPrice` (required)
-  **Response:** Booking confirmation and details.
+#### GET `/api/buses/:busId`
+Get detailed information for a specific bus.
 
----
+**Parameters:**
+- `busId`: ID of the bus
 
-## Frontend Application
+**Response:** Detailed bus information including stops, seat availability, and pricing.
 
-The frontend is built with React and provides a user-friendly booking flow:
+### 2. Bookings Management (`/api/bookings`)
 
-### Main Pages and Features
+#### POST `/api/bookings`
+Create a new booking for selected seats.
 
-| Path                 | Description                                |
-|----------------------|--------------------------------------------|
-| `/`                  | Home/Search page for buses                 |
-| `/buses`             | Shows results/list of available buses      |
-| `/bus/:id`           | Bus details and seat selection             |
-| `/payment`           | Payment page for selected booking          |
-| `/booking-success`   | Success page with booking summary          |
-| `*`                  | 404 Not Found                              |
+**Request Body:**
+- `busId` (required): ID of the bus to book
+- `seats` (required): Array of seat numbers to book
+- `passengers` (required): Array of passenger details
+  - `name`: Passenger name
+  - `age`: Passenger age
+  - `gender`: Passenger gender ('male' | 'female' | 'other')
+- `totalPrice` (required): Total booking amount
 
-#### Key Features
+**Response:**
+```json
+{
+  "message": "Booking successful",
+  "booking": BookingDetails
+}
+```
 
-- **City-to-City Search:** Start by searching for buses between Hyderabad, Raipur, and Bangalore.
-- **Filtering:** Filter results by AC type, seat type, and departure time.
-- **Bus Details:** View stops, seat availability, and pricing for each bus.
-- **Seat Selection:** Interactive seat selection for booking.
-- **Booking & Confirmation:** Enter passenger details, pay, and get instant booking confirmation.
+### 3. Seat Management (`/api/seats`)
 
----
+#### POST `/api/seats/lock`
+Temporarily lock selected seats during the booking process.
 
-## Running Locally
+**Request Body:**
+- `busId`: ID of the bus
+- `seats`: Array of seat numbers to lock
 
-1. **Clone the repo**
-2. **Backend:**  
-   - Navigate to `back/`
-   - Install dependencies: `npm install`
-   - Start server: `npm run dev`
-3. **Frontend:**  
-   - Navigate to `frontend/`
-   - Install dependencies: `npm install`
-   - Start app: `npm start`
-4. Open [http://localhost:3000](http://localhost:3000) to use the app.
+**Response:** Confirmation of seats being locked for booking.
 
----
+## Available Routes
 
-## Summary
+Currently, SwiftSeat offers the following bus routes:
+- Raipur ↔️ Bangalore
+- Raipur ↔️ Hyderabad
+- Bangalore ↔️ Hyderabad
 
-- **SwiftSeat** is a city-to-city bus booking platform limited to Hyderabad, Raipur, and Bangalore.
-- The backend exposes routes for searching buses and making bookings.
-- The frontend offers a smooth booking experience, seat selection, and confirmation.
-- For technical details, see the `routes` and `controllers` in the codebase.
+Note: All routes are available in both directions.
 
----
+## Frontend Routes
 
-> For issues or suggestions, please open an issue on GitHub.
+The frontend application provides the following routes for user interaction:
+
+| Path | Description |
+|------|-------------|
+| `/` | Home/Search page for finding buses |
+| `/buses` | Display search results and available buses |
+| `/bus/:id` | Bus details and seat selection interface |
+| `/payment` | Payment processing and passenger details |
+| `/booking-success` | Booking confirmation page |
+| `*` | 404 Not Found page |
+
+## Key Features
+
+1. **Search Functionality**
+   - City-to-city bus search (limited to Raipur, Bangalore, and Hyderabad)
+   - Multiple filter options (AC/Non-AC, seat types, time slots)
+   - Pagination support
+
+2. **Booking System**
+   - Interactive seat selection
+   - Temporary seat locking during booking
+   - Passenger information management
+   - Booking confirmation system
+
+3. **Bus Details**
+   - Comprehensive bus information
+   - Real-time seat availability
+   - Pricing details
+   - Route information with stops
+
+## Technical Notes
+
+- All API endpoints return appropriate HTTP status codes
+- Error handling is implemented across all routes
+- CORS is enabled for cross-origin requests
+- City validation is enforced for all route searches
+- Frontend deployed at: [swift-seat-mu.vercel.app](https://swift-seat-mu.vercel.app)
