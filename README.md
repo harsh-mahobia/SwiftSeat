@@ -129,7 +129,7 @@ The frontend application provides the following routes for user interaction:
 - City validation is enforced for all route searches
 - Frontend deployed at: [swift-seat-mu.vercel.app](https://swift-seat-mu.vercel.app)
 
-## Screenshorts of dataflow
+## Screenshots of dataflow
 
 <img width="1912" height="958" alt="Screenshot 2025-08-19 204738" src="https://github.com/user-attachments/assets/6107bcd3-25a4-46e3-83c6-e226fffd746e" />
 <img width="1898" height="958" alt="Screenshot 2025-08-19 204720" src="https://github.com/user-attachments/assets/d6f01fd0-f42c-405c-b07a-bd0a18e94b1d" />
