@@ -23,7 +23,25 @@ const SearchPage = () => {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
+    <div className="flex flex-col justify-center items-center h-screen bg-gray-100">
+      <div className="w-full max-w-md mb-8 bg-gradient-to-r from-indigo-500 to-purple-700 text-white p-5 rounded-2xl shadow-lg flex flex-col items-center">
+        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+          ℹ️ Important Note
+        </h3>
+        <p className="text-sm mb-3">Currently this website works only for:</p>
+        <ul className="list-disc list-inside space-y-1 text-sm flex gap-2 justify-center items-center">
+          <li>Hyderabad</li>
+          <li>Raipur</li>
+          <li>Bangalore</li>
+        </ul>
+        <div className="mt-3 text-sm">
+          <p className="font-medium">Available date range:</p>
+          <p className="bg-white/20 w-fit px-3 py-1 mt-1 rounded-md shadow-sm">
+            20-08-2025 ➝ 30-08-2025
+          </p>
+        </div>
+      </div>
+
       <form
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-300"
