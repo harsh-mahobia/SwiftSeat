@@ -4,6 +4,7 @@ import connectDB from "./config/db";
 import busRoutes from "./routes/bus";
 import bookingRoutes from "./routes/bookings";
 import lockRoutes from './routes/lock'
+import healthRoutes from './routes/health'
 import { errorHandler } from "./middleware/ErrorHandler";
 import cors from "cors";
 
@@ -25,6 +26,7 @@ app.get("/", (req, res)=>{
 app.use("/api/buses", busRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/seats", lockRoutes )
+app.use("/", healthRoutes)
 
 
 app.use(errorHandler);
