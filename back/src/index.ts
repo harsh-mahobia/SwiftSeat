@@ -23,10 +23,11 @@ app.use(cors({
 app.get("/", (req, res)=>{
     res.send("Hello World");
 })
+app.use("/", healthRoutes)
 app.use("/api/buses", busRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/seats", lockRoutes )
-app.use("/", healthRoutes)
+
 
 
 app.use(errorHandler);
